@@ -33,21 +33,21 @@ public class Main {
     // Fill in the Conditional Probability Table for each variable
     
     // Cloudy CPT
-    cloudy.getCpt().put("P(C)", 0.5);
+    cloudy.getCpt().put("P(C)", 0.5); // probability that it is cloudy
     
     // Sprinkler CPT
-    sprinkler.getCpt().put("P(S|C)", 0.1);
-    sprinkler.getCpt().put("P(S|~C)", 0.5);
+    sprinkler.getCpt().put("P(S|C)", 0.1);    // probability that the sprinkler is on when it's cloudy
+    sprinkler.getCpt().put("P(S|~C)", 0.5);   // probability that the sprinkler is on when it's not cloudy
     
     // Raining CPT
-    raining.getCpt().put("P(R|C)", 0.8);
-    raining.getCpt().put("P(R|~C)", 0.2);
+    raining.getCpt().put("P(R|C)", 0.8);      // probability that it's raining when its cloudy
+    raining.getCpt().put("P(R|~C)", 0.2);     // probability that it's raining when its not cloudy
     
     // Wet Grass CPT
-    wetGrass.getCpt().put("P(W|S,R)", 0.99);
-    wetGrass.getCpt().put("P(W|S,~R)", 0.9);
-    wetGrass.getCpt().put("P(W|~S,R)", 0.9);
-    wetGrass.getCpt().put("P(W|~S,~R)", 0.0);  
+    wetGrass.getCpt().put("P(W|S,R)", 0.99);  // probability that the grass is wet when the sprinkler is on and it's raining
+    wetGrass.getCpt().put("P(W|S,~R)", 0.9);  // probability that the grass is wet when the sprinkler is on and it's not raining
+    wetGrass.getCpt().put("P(W|~S,R)", 0.9);  // probability that the grass is wet when the sprinkler is off and it's raining
+    wetGrass.getCpt().put("P(W|~S,~R)", 0.0); // probability that the grass is wet when the sprinkler is off and it's not raining 
     
     // Execute conditional probability queries against the model
     
