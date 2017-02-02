@@ -5,37 +5,53 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+import org.junit.Before;
 import org.junit.Test;
 
 public class NetworkTest {
+  
+  private Network network;
+  
+  private RandomVariable cloudy;
+  private RandomVariable sprinkler;
+  private RandomVariable raining;
+  private RandomVariable wetGrass;
+  
+  @Before
+  public void setup() {
+    network = new Network();
+     
+     cloudy = network.newVariable("C", "Cloudy");
+     sprinkler = network.newVariable("S", "Sprinkler");
+     raining = network.newVariable("R", "Raining");
+     wetGrass = network.newVariable("W", "Wet Grass");
+     
+     cloudy.addChild(sprinkler);
+     cloudy.addChild(raining);
+     sprinkler.addChild(wetGrass);
+     raining.addChild(wetGrass);
+     
+     cloudy.getCpt().put("P(C)", 0.5);
+     
+     sprinkler.getCpt().put("P(S|C)", 0.1);
+     sprinkler.getCpt().put("P(S|~C)", 0.5);
+     
+     raining.getCpt().put("P(R|C)", 0.8);
+     raining.getCpt().put("P(R|~C)", 0.2);
+     
+     wetGrass.getCpt().put("P(W|S,R)", 0.99);
+     wetGrass.getCpt().put("P(W|S,~R)", 0.9);
+     wetGrass.getCpt().put("P(W|~S,R)", 0.9);
+     wetGrass.getCpt().put("P(W|~S,~R)", 0.0);
+  }
+
 
   @Test
-  public void test_nodes_and_edges () {
-   Network network = new Network();
+  public void test_creation () {
    
-   RandomVariable cloudy = network.newVariable("C", "Cloudy");
-   RandomVariable sprinkler = network.newVariable("S", "Sprinkler");
-   RandomVariable raining = network.newVariable("R", "Raining");
-   RandomVariable wetGrass = network.newVariable("W", "Wet Grass");
-   
-   cloudy.addChild(sprinkler);
-   cloudy.addChild(raining);
-   sprinkler.addChild(wetGrass);
-   raining.addChild(wetGrass);
-   
-   cloudy.getCpt().put("P(C)", 0.5);
-   
-   sprinkler.getCpt().put("P(S|C)", 0.9);
-   sprinkler.getCpt().put("P(S|~C)", 0.5);
-   
-   raining.getCpt().put("P(R|C)", 0.8);
-   raining.getCpt().put("P(R|~C)", 0.2);
-   
-   wetGrass.getCpt().put("P(W|S,R)", 0.99);
-   wetGrass.getCpt().put("P(W|S,~R)", 0.9);
-   wetGrass.getCpt().put("P(W|~S,R)", 0.9);
-   wetGrass.getCpt().put("P(W|~S,~R)", 0.0);
-
    assertFalse(cloudy.hasParents());
    assertThat(cloudy.getParents().size(), equalTo(0));
    assertTrue(cloudy.hasChildren());
@@ -95,8 +111,8 @@ public class NetworkTest {
    assertThat(cloudy.getCpt().get("P(~C)"), equalTo(0.5));
    
    assertTrue(sprinkler.getCpt().hasAllRequiredProbabilities());
-   assertThat(sprinkler.getCpt().get("P(S|C)"), equalTo(0.9));
-   assertThat(sprinkler.getCpt().get("P(~S|C)"), equalTo(0.1));
+   assertThat(sprinkler.getCpt().get("P(S|C)"), equalTo(0.1));
+   assertThat(sprinkler.getCpt().get("P(~S|C)"), equalTo(0.9));
    assertThat(sprinkler.getCpt().get("P(S|~C)"), equalTo(0.5));
    assertThat(sprinkler.getCpt().get("P(~S|~C)"), equalTo(0.5));
 
@@ -116,6 +132,54 @@ public class NetworkTest {
    assertThat(wetGrass.getCpt().get("P(W|~S,~R)"), equalTo(0.0));
    assertThat(wetGrass.getCpt().get("P(~W|~S,~R)"), equalTo(1.0));
   }
-  
-  
+
+  @Test
+  public void test_query() {
+    BigDecimal scaledResult = null;
+     
+     double result = network.query("P(S|W)");
+     scaledResult = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+     assertThat(scaledResult, equalTo(new BigDecimal("0.430")));
+     
+     result = network.query("P(R|W)");
+     scaledResult = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+     assertThat(scaledResult, equalTo(new BigDecimal("0.708")));
+     
+     result = network.query("P(S,W)");
+     scaledResult = new BigDecimal(result).setScale(4, RoundingMode.HALF_UP);
+     assertThat(scaledResult, equalTo(new BigDecimal("0.2781")));
+
+     result = network.query("P(R,W)");
+     scaledResult = new BigDecimal(result).setScale(4, RoundingMode.HALF_UP);
+     assertThat(scaledResult, equalTo(new BigDecimal("0.4581")));
+     
+     result = network.query("P(W)");
+     scaledResult = new BigDecimal(result).setScale(4, RoundingMode.HALF_UP);
+     assertThat(scaledResult, equalTo(new BigDecimal("0.6471")));
+     
+     result = network.query("P(W|R)");
+     scaledResult = new BigDecimal(result).setScale(4, RoundingMode.HALF_UP);
+     assertThat(scaledResult, equalTo(new BigDecimal("0.9162")));
+ 
+     result = network.query("P(W|S)");
+     scaledResult = new BigDecimal(result).setScale(4, RoundingMode.HALF_UP);
+     assertThat(scaledResult, equalTo(new BigDecimal("0.9270")));
+     
+     result = network.query("P(W|~R)");
+     scaledResult = new BigDecimal(result).setScale(4, RoundingMode.HALF_UP);
+     assertThat(scaledResult, equalTo(new BigDecimal("0.3780")));
+     
+     result = network.query("P(W|~S)");
+     scaledResult = new BigDecimal(result).setScale(4, RoundingMode.HALF_UP);
+     assertThat(scaledResult, equalTo(new BigDecimal("0.5271")));
+
+     result = network.query("P(W|S,~R)");
+     scaledResult = new BigDecimal(result).setScale(1, RoundingMode.HALF_UP);
+     assertThat(scaledResult, equalTo(new BigDecimal("0.9")));
+ 
+     result = network.query("P(C)");
+     scaledResult = new BigDecimal(result).setScale(1, RoundingMode.HALF_UP);
+     assertThat(scaledResult, equalTo(new BigDecimal("0.5")));
+  }
+
 }
