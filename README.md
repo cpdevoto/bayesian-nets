@@ -49,7 +49,7 @@ public class Main {
     wetGrass.getCpt().put("P(W|~S,R)", 0.9);  // probability that the grass is wet when the sprinkler is off and it's raining
     wetGrass.getCpt().put("P(W|~S,~R)", 0.0); // probability that the grass is wet when the sprinkler is off and it's not raining 
     
-    // Execute conditional probability queries against the model
+    // Execute probability queries against the model
     
     // Example 1: If the grass is currently wet and the sky is cloudy, is it more likely 
     // that it is raining or that the sprinkler is on?
