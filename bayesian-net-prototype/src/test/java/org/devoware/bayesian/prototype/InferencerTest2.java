@@ -2,22 +2,12 @@ package org.devoware.bayesian.prototype;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
-import java.util.Set;
 
-import org.devoware.bayesian.prototype.Network;
-import org.devoware.bayesian.prototype.ProbabilityExpressionFilter;
-import org.devoware.bayesian.prototype.RandomVariable;
-import org.devoware.bayesian.prototype.expr.ProbabilityExpression;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 
 public class InferencerTest2 {
 

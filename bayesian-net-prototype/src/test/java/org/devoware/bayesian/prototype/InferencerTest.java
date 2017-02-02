@@ -6,8 +6,6 @@ import static org.junit.Assert.assertThat;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -84,5 +82,13 @@ public class InferencerTest {
     result = inferencer.query("P(W|~S)");
     scaledResult = new BigDecimal(result).setScale(4, RoundingMode.HALF_UP);
     assertThat(scaledResult, equalTo(new BigDecimal("0.5271")));
+
+    result = inferencer.query("P(W|S,~R)");
+    scaledResult = new BigDecimal(result).setScale(1, RoundingMode.HALF_UP);
+    assertThat(scaledResult, equalTo(new BigDecimal("0.9")));
+  
+    result = inferencer.query("P(C)");
+    scaledResult = new BigDecimal(result).setScale(1, RoundingMode.HALF_UP);
+    assertThat(scaledResult, equalTo(new BigDecimal("0.5")));
   }
 }
