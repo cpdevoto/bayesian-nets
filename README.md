@@ -93,6 +93,19 @@ The purpose of this section is to demystify the math underlying the inference en
 
 The inference engine works by converting the specified query expression into a form that is composed entirely of terms that appear within the CPT tables. Once the expression has been converted in this way, computing the result is simply a matter of doing CPT lookups and then appying basic math.
 
-![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 1")
+**Some Basic Definitions First:** In an expression such as **P(S|W,~C)**, any terms which appear before the pipe character are referred to as **hypotheses**.  In the case of the expression **P(S|W,~C)**, the term **S** is a hypothesis. Any terms which appear after the pipe character are referred to as **evidence**.  In the case of the expression **P(S|W,~C)**, the terms **W** and **~C** are the **evidence**.  An expression which includes the pipe character is referred to as a conditional probability expression.
+
+####The Algorithm
+
+![alt text](https://github.com/cpdevoto/bayesian-nets/raw/master/inference-math.png "Inference Math")
 
 
+The steps of the algorithm are as follows.
+
+**Step 1:** Rewrite the specified expression to eliminate conditional probability. The numerator includes all terms that appear either as hypotheses or as evidence within the input expression, .  The denominator includes all terms that appear as evidence within the input expression. If there is no evidence within the input expression, then there is no denominator within the result.
+
+**Step 2:** Convert the numerator and denominator into a sigma expression representing the sum of several joint probability expressions.  All terms from the input expression remain fixed at the values specified in the input expression.  The terms that are not in the input expression are permuted.
+
+**Step 3:** For each of the joint probability expressions generated in the preceding step, go through the CPT for each variable in the network and find the probability expression which matches all of the terms in the joint probability expression in question.  This should produce one probability expression for each random variable that appears in the Bayesian network.  The product of all of these expressions is equivalent to the joint probability expression in question.
+
+**Step 4:** The original expression has now been converted into a form that can solved for doing simple CPT table lookups and then applying some basic math! 
