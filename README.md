@@ -93,9 +93,12 @@ The purpose of this section is to demystify the math underlying the inference en
 
 The inference engine works by converting the specified query expression into a form that is composed entirely of terms that appear within the CPT tables. Once the expression has been converted in this way, computing the result is simply a matter of doing CPT lookups and then appying basic math.
 
+**Some Basic Definitions First:** In an expression such as **P(S|W,~C)**, any terms which appear before the pipe character are referred to as **hypotheses**.  In the case of the expression **P(S|W,~C)**, the term **S** is a hypothesis. Any terms which appear after the pipe character are referred to as **evidence**.  In the case of the expression **P(S|W,~C)**, the terms **W** and **~C** are the **evidence**.  An expression which includes the pipe character is referred to as a conditional probability expression.
+
+####The Algorithm
+
 ![alt text](https://github.com/cpdevoto/bayesian-nets/raw/master/inference-math.png "Inference Math")
 
-**Some Basic Definitions First:** In an expression such as **P(S|W,~C)**, any terms which appear before the pipe character are referred to as **hypotheses**.  In the case of the expression **P(S|W,~C)**, the term **S** is a hypothesis. Any terms which appear after the pipe character are referred to as **evidence**.  In the case of the expression **P(S|W,~C)**, the terms **W** and **~C** are the **evidence**.  An expression which includes the pipe character is referred to as a conditional probability expression.
 
 The steps of the algorithm delineated below refer to the diagram above.
 
