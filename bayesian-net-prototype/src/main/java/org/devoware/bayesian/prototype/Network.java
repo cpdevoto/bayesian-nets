@@ -5,14 +5,15 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.devoware.bayesian.prototype.expr.Parser;
 import org.devoware.bayesian.prototype.expr.ProbabilityExpression;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -25,8 +26,8 @@ public class Network {
   private final Inferencer inferencer = Inferencer.create(this);
   private final Set<RandomVariable> vars = Sets.newLinkedHashSet();
   private final Map<String, RandomVariable> varsById = Maps.newLinkedHashMap();
-  private final Multimap<String, RandomVariable> childToParentEdges = HashMultimap.create();
-  private final Multimap<String, RandomVariable> parentToChildEdges = HashMultimap.create();
+  private final Multimap<String, RandomVariable> childToParentEdges = LinkedHashMultimap.create();
+  private final Multimap<String, RandomVariable> parentToChildEdges = LinkedHashMultimap.create();
   private final Map<String,Boolean> evidence = Maps.newTreeMap();
   
   public Network () {}
@@ -51,6 +52,17 @@ public class Network {
   
   public Set<RandomVariable> getVariables () {
     return ImmutableSet.copyOf(vars);
+  }
+  
+  public Multimap<RandomVariable,RandomVariable> getEdges () {
+    Multimap<RandomVariable,RandomVariable> edges = LinkedHashMultimap.create();
+    for (Entry<String,Collection<RandomVariable>> entry : parentToChildEdges.asMap().entrySet()) {
+      RandomVariable parent = varsById.get(entry.getKey());
+      for (RandomVariable child : entry.getValue()) {
+        edges.put(parent, child);
+      }
+    }
+    return edges;
   }
 
   public RandomVariable getVariable(String id) {
