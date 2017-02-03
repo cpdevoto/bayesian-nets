@@ -110,4 +110,4 @@ The steps of the algorithm are as follows.
 
 **Step 4:** The original expression has now been converted into a form that can solved for doing simple CPT table lookups and then applying some basic math! 
 
-The performance of this basic algorithm becomes prohibitive for large networks. To improve the performance for exact inference, we can use the Variable Elimination algorithm, or we could switch to approximate inference using block Gibbs sampling. 
+The performance of this basic algorithm becomes prohibitive for large networks. To improve the performance for exact inference, we can use the Variable Elimination algorithm, or we could switch to approximate inference using block Gibbs Sampling. The goal here was to keep things simple in order to provide a basic introduction for programmers.
