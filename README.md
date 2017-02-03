@@ -1,8 +1,8 @@
 # bayesian-nets
 Prototypes for the creation of Bayesian Networks.
 
-## baysesian-net-prototype
-A basic prototype showing a fully functional Bayesian network with minimal functionality.  This prototype supports the following features:
+## baysesian-net-core
+A simple library showing a fully functional Bayesian network with minimal functionality.  This prototype supports the following features:
 * Construct a fixed model consisting of binary variables joined by directed edges.
 * For each variable, input the values for the associated conditional probability table.
 * Issue conditional probability queries against the network in order to answer questions.
