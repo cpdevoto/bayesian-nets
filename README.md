@@ -109,3 +109,5 @@ The steps of the algorithm are as follows.
 **Step 3:** For each of the joint probability expressions generated in the preceding step, go through the CPT for each variable in the network and find the probability expression which matches all of the terms in the joint probability expression in question.  This should produce one probability expression for each random variable that appears in the Bayesian network.  The product of all of these expressions is equivalent to the joint probability expression in question.
 
 **Step 4:** The original expression has now been converted into a form that can solved for doing simple CPT table lookups and then applying some basic math! 
+
+The performance of this basic algorithm becomes prohibitive for large networks. To improve the performance for exact inference, we can use the Variable Elimination algorithm, or we could switch to approximate inference using block Gibbs sampling. 
