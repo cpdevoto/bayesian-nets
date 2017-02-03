@@ -45,6 +45,10 @@ public class ProbabilityExpressionFilter {
     return true;
   }
   
+  public Map<String,Boolean> toMap () {
+    return ImmutableMap.copyOf(hypotheses);
+  }
+  
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -106,6 +110,12 @@ public class ProbabilityExpressionFilter {
     public Builder withHypothesis(String id, boolean value) {
       requireNonNull(id, "id cannot be null");
       hypotheses.put(id, value);
+      return this;
+    }
+
+    public Builder withHypotheses(Map<String,Boolean> hypotheses) {
+      requireNonNull(hypotheses, "hypotheses cannot be null");
+      this.hypotheses.putAll(hypotheses);
       return this;
     }
 

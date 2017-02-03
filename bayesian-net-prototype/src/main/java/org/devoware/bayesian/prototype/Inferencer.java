@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.devoware.bayesian.prototype.expr.ProbabilityExpression;
 
@@ -29,10 +30,12 @@ class Inferencer {
   double query (String expression) {
     ProbabilityExpression expr = network.parse(expression);
     ProbabilityExpressionFilter numeratorFilter = generateNumeratorFilter(expr);
+    List<ProbabilityExpressionFilter> numeratorFilters = generateJointProbabilityFilters(numeratorFilter);
+    BigDecimal result = compute(numeratorFilters);
     Optional<ProbabilityExpressionFilter> denominatorFilter = generateDenominatorFilter(expr);
-    BigDecimal result = compute(numeratorFilter);
     if (denominatorFilter.isPresent()) {
-      BigDecimal denominator = compute(denominatorFilter.get());
+      List<ProbabilityExpressionFilter> denominatorFilters = generateJointProbabilityFilters(denominatorFilter.get());
+      BigDecimal denominator = compute(denominatorFilters);
       result = result.divide(denominator, new MathContext(5, RoundingMode.HALF_UP));
     }
     return result.doubleValue();
@@ -59,10 +62,55 @@ class Inferencer {
     }
     return Optional.of(builder.build());
   }
-  
-  private BigDecimal compute(ProbabilityExpressionFilter filter) {
-    List<List<ProbabilityExpression>> allMatches = getAllMatches(filter);
-    List<List<ProbabilityExpression>> permutations = permute(allMatches);
+
+  private List<ProbabilityExpressionFilter> generateJointProbabilityFilters(
+      ProbabilityExpressionFilter inputFilter) {
+    List<Map<String,Boolean>> jointFilterMaps = Lists.newArrayList();
+    Map<String,Boolean> base = Maps.newLinkedHashMap();
+    List<String> varIds = getVariables().stream().map(RandomVariable::getId).collect(Collectors.toList());
+    generateJointProbabilityFilters(inputFilter.toMap(), varIds, 0, jointFilterMaps, base);
+    List<ProbabilityExpressionFilter> jointFilters = Lists.newArrayList();
+    for (Map<String,Boolean> jointFilterMap : jointFilterMaps) {
+      jointFilters.add(ProbabilityExpressionFilter.builder().withHypotheses(jointFilterMap).build());
+    }
+    return jointFilters;
+  }
+
+  private void generateJointProbabilityFilters(Map<String,Boolean> inputFilter, List<String> varIds, int idx,
+      List<Map<String, Boolean>> jointFilterMaps, Map<String, Boolean> base) {
+    String currentVar = varIds.get(idx);
+    Boolean fixedValue = inputFilter.get(currentVar);
+    if (idx >= varIds.size() - 1) {
+      if (fixedValue != null) {
+        Map<String,Boolean> filterMap = Maps.newLinkedHashMap(base);
+        filterMap.put(currentVar, fixedValue);
+        jointFilterMaps.add(filterMap);
+      } else {
+        Map<String,Boolean> filterMap1 = Maps.newLinkedHashMap(base);
+        filterMap1.put(currentVar, true);
+        jointFilterMaps.add(filterMap1);
+        Map<String,Boolean> filterMap2 = Maps.newLinkedHashMap(base);
+        filterMap2.put(currentVar, false);
+        jointFilterMaps.add(filterMap2);
+      }
+    } else {
+      if (fixedValue != null) {
+        Map<String,Boolean> newBase = Maps.newLinkedHashMap(base);
+        newBase.put(currentVar, fixedValue);
+        generateJointProbabilityFilters(inputFilter, varIds, idx + 1, jointFilterMaps, newBase);
+      } else {
+        Map<String,Boolean> newBase1 = Maps.newLinkedHashMap(base);
+        newBase1.put(currentVar, true);
+        generateJointProbabilityFilters(inputFilter, varIds, idx + 1, jointFilterMaps, newBase1);
+        Map<String,Boolean> newBase2 = Maps.newLinkedHashMap(base);
+        newBase2.put(currentVar, false);
+        generateJointProbabilityFilters(inputFilter, varIds, idx + 1, jointFilterMaps, newBase2);
+      }
+    }
+  }
+
+  private BigDecimal compute(List<ProbabilityExpressionFilter> filters) {
+    List<List<ProbabilityExpression>> permutations = getAllMatches(filters);
     BigDecimal result = new BigDecimal("0.0");
     for (List<ProbabilityExpression> permutation : permutations) {
       BigDecimal intermediate = null;
@@ -87,13 +135,25 @@ class Inferencer {
     return var.getCpt().getDecimal(expr);
   }
 
-  private List<List<ProbabilityExpression>> getAllMatches(ProbabilityExpressionFilter filter) {
+  private List<List<ProbabilityExpression>> getAllMatches(List<ProbabilityExpressionFilter> filters) {
     List<List<ProbabilityExpression>> allMatches = Lists.newArrayList();
-    for (RandomVariable var : getVariables()) {
-      if (!var.getCpt().hasAllRequiredProbabilities()) {
-        throw new IllegalStateException("Random variable " + var.getId() + " does not have all of its required probabilities set.");
+    boolean firstLoop = true;
+    for (ProbabilityExpressionFilter filter : filters) {
+      List<ProbabilityExpression> matches = Lists.newArrayList();
+      for (RandomVariable var : getVariables()) {
+        if (firstLoop) {
+          firstLoop = false;
+          if (!var.getCpt().hasAllRequiredProbabilities()) {
+            throw new IllegalStateException("Random variable " + var.getId() + " does not have all of its required probabilities set.");
+          }
+        }
+        List<ProbabilityExpression> varMatches = var.getCpt().findExpressions(filter);
+        // Since we are using a joint probability expression filter, we expect exactly one match from each CPT
+        if (varMatches.size() != 1) {
+          throw new AssertionError("Expected only one expression from the CPT for variable " + var.getId() + " to match the specified joint probability filter " + filter);
+        }
+        matches.add(varMatches.get(0));
       }
-      List<ProbabilityExpression> matches = var.getCpt().findExpressions(filter);
       allMatches.add(matches);
     }
     return allMatches;
@@ -102,62 +162,6 @@ class Inferencer {
   private Set<RandomVariable> getVariables() {
     // TODO: Is it correct to include matches from all vars, or just the ones that are reachable for the vars referenced in the filter?
     return network.getVariables();
-  }
-  
-  private List<List<ProbabilityExpression>> permute(List<List<ProbabilityExpression>> allMatches) {
-    List<List<ProbabilityExpression>> permutations = Lists.newArrayList();
-    permute(allMatches, permutations, Lists.newArrayList(), 0);
-    permutations = eliminatePermutationsWithDisagreements(permutations);
-    return permutations;
-  }
-
-
-  private List<List<ProbabilityExpression>> eliminatePermutationsWithDisagreements(
-      List<List<ProbabilityExpression>> permutations) {
-    List<List<ProbabilityExpression>> result = Lists.newArrayList();
-    for (List<ProbabilityExpression> permutation : permutations) {
-      Map<String, Boolean> seen = Maps.newHashMap();
-      boolean validPermutation = true;
-      outer: for (ProbabilityExpression expr : permutation) {
-        for (Entry<String,Boolean> entry : expr.getHypothesesMap().entrySet()) {
-          if (!seen.containsKey(entry.getKey())) {
-            seen.put(entry.getKey(), entry.getValue());
-          } else if (seen.get(entry.getKey()) != entry.getValue()) {
-            validPermutation = false;
-            break outer;
-          }
-        }
-        for (Entry<String,Boolean> entry : expr.getEvidenceMap().entrySet()) {
-          if (!seen.containsKey(entry.getKey())) {
-            seen.put(entry.getKey(), entry.getValue());
-          } else if (seen.get(entry.getKey()) != entry.getValue()) {
-            validPermutation = false;
-            break outer;
-          }
-        }
-      }
-      if (validPermutation) {
-        result.add(permutation);
-      }
-    }
-    
-    return result;
-  }
-
-  private void permute(List<List<ProbabilityExpression>> allMatches,
-      List<List<ProbabilityExpression>> permutations, List<ProbabilityExpression> base, int idx) {
-    List<ProbabilityExpression> expressions = allMatches.get(idx); 
-    for (int i = 0; i < expressions.size(); i++) {
-      if (idx >= allMatches.size() - 1) {
-        List<ProbabilityExpression> permutation = Lists.newArrayList(base);
-        permutation.add(expressions.get(i));
-        permutations.add(permutation);
-      } else {
-        List<ProbabilityExpression> newBase = Lists.newArrayList(base);
-        newBase.add(expressions.get(i));
-        permute(allMatches, permutations, newBase, idx + 1);
-      }
-    }
   }
 
 }

@@ -72,8 +72,6 @@ public class ProbabilityExpressionFilterTest {
     
     allMatches = getAllMatches(filter);
     
-    System.out.println(allMatches);
-
     assertThat(allMatches.size(), equalTo(4));
 
     cSet = ImmutableSet.copyOf(allMatches.get(0));
