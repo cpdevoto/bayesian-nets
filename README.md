@@ -102,7 +102,7 @@ The inference engine works by converting the specified query expression into a f
 
 The steps of the algorithm are as follows.
 
-**Step 1:** Rewrite the specified expression to eliminate conditional probability. The numerator includes all terms that appear in the input expression, either as hypotheses or as evidence.  The denominator includes all terms that appear as evidence. If there is no evidence, there is no denominator.
+**Step 1:** Rewrite the specified expression to eliminate conditional probability. The numerator includes all terms that appear either as hypotheses or as evidence within the input expression, .  The denominator includes all terms that appear as evidence within the input expression. If there is no evidence within the input expression, then there is no denominator within the result.
 
 **Step 2:** Convert the numerator and denominator into a sigma expression representing the sum of several joint probability expressions.  All terms from the input expression remain fixed at the values specified in the input expression.  The terms that are not in the input expression are permuted.
 
