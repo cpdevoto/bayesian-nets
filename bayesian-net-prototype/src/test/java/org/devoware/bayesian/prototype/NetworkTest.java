@@ -7,9 +7,13 @@ import static org.junit.Assert.assertTrue;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.collect.Maps;
+import com.google.common.eventbus.Subscribe;
 
 public class NetworkTest {
   
@@ -148,7 +152,7 @@ public class NetworkTest {
      result = network.query("P(S,W)");
      scaledResult = new BigDecimal(result).setScale(4, RoundingMode.HALF_UP);
      assertThat(scaledResult, equalTo(new BigDecimal("0.2781")));
-
+  
      result = network.query("P(R,W)");
      scaledResult = new BigDecimal(result).setScale(4, RoundingMode.HALF_UP);
      assertThat(scaledResult, equalTo(new BigDecimal("0.4581")));
@@ -160,7 +164,7 @@ public class NetworkTest {
      result = network.query("P(W|R)");
      scaledResult = new BigDecimal(result).setScale(4, RoundingMode.HALF_UP);
      assertThat(scaledResult, equalTo(new BigDecimal("0.9162")));
- 
+  
      result = network.query("P(W|S)");
      scaledResult = new BigDecimal(result).setScale(4, RoundingMode.HALF_UP);
      assertThat(scaledResult, equalTo(new BigDecimal("0.9270")));
@@ -172,14 +176,249 @@ public class NetworkTest {
      result = network.query("P(W|~S)");
      scaledResult = new BigDecimal(result).setScale(4, RoundingMode.HALF_UP);
      assertThat(scaledResult, equalTo(new BigDecimal("0.5271")));
-
+  
      result = network.query("P(W|S,~R)");
      scaledResult = new BigDecimal(result).setScale(1, RoundingMode.HALF_UP);
      assertThat(scaledResult, equalTo(new BigDecimal("0.9")));
- 
+  
      result = network.query("P(C)");
      scaledResult = new BigDecimal(result).setScale(1, RoundingMode.HALF_UP);
      assertThat(scaledResult, equalTo(new BigDecimal("0.5")));
   }
 
+
+  @Test
+  public void test_evidence() {
+    NetworkListener listener = new NetworkListener();
+    network.addNetworkListener(listener);
+    
+    BigDecimal scaledResult1 = null, scaledResult2 = null;
+
+    // Test initial state before evidence is added
+    double result = cloudy.getProbability();
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+  
+    result = sprinkler.getProbability();
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(S)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+
+    result = raining.getProbability();
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(R)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+
+    result = wetGrass.getProbability();
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(W)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+
+    // Add evidence W
+    network.setEvidence("W", true);
+    
+    result = listener.varProbabilities.get("C");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(C|W)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+
+    result = listener.varProbabilities.get("S");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(S|W)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+  
+    result = listener.varProbabilities.get("R");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(R|W)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+  
+    result = listener.varProbabilities.get("W");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(W|W)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+    
+    //Add evidence C
+    network.setEvidence("C", true);
+    
+    result = listener.varProbabilities.get("C");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(C|W,C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+
+    result = listener.varProbabilities.get("S");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(S|W,C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+  
+    result = listener.varProbabilities.get("R");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(R|W,C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+  
+    result = listener.varProbabilities.get("W");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(W|W,C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+    
+    // Remove evidence W
+    network.clearEvidence("W");
+    
+    result = listener.varProbabilities.get("C");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(C|C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+
+    result = listener.varProbabilities.get("S");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(S|C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+  
+    result = listener.varProbabilities.get("R");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(R|C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+  
+    result = listener.varProbabilities.get("W");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(W|C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+    
+    // Remove evidence W
+    network.clearEvidence("W");
+    
+    result = listener.varProbabilities.get("C");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(C|C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+
+    result = listener.varProbabilities.get("S");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(S|C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+  
+    result = listener.varProbabilities.get("R");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(R|C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+  
+    result = listener.varProbabilities.get("W");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(W|C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+    
+    // Change evidence C
+    network.setEvidence("C",false);
+    
+    result = listener.varProbabilities.get("C");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(C|~C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+
+    result = listener.varProbabilities.get("S");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(S|~C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+  
+    result = listener.varProbabilities.get("R");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(R|~C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+  
+    result = listener.varProbabilities.get("W");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(W|~C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+
+    // Clear all evidence
+    network.clearEvidence();
+    
+    result = listener.varProbabilities.get("C");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(C)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+
+    result = listener.varProbabilities.get("S");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(S)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+  
+    result = listener.varProbabilities.get("R");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(R)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+  
+    result = listener.varProbabilities.get("W");
+    scaledResult1 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+
+    result = network.query("P(W)");
+    scaledResult2 = new BigDecimal(result).setScale(3, RoundingMode.HALF_UP);
+    assertThat(scaledResult1, equalTo(scaledResult2));
+    
+  }
+  
+  private static class NetworkListener {
+    private final Map<String,Double> varProbabilities = Maps.newLinkedHashMap();
+
+    @Subscribe
+    public void handleNetworkChange (Network network) {
+      for (RandomVariable var : network.getVariables()) {
+        varProbabilities.put(var.getId(), var.getProbability());
+      }
+    }
+  }
 }

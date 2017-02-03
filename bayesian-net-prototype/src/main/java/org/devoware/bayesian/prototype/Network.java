@@ -11,6 +11,7 @@ import org.devoware.bayesian.prototype.expr.Parser;
 import org.devoware.bayesian.prototype.expr.ProbabilityExpression;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
@@ -26,6 +27,7 @@ public class Network {
   private final Map<String, RandomVariable> varsById = Maps.newLinkedHashMap();
   private final Multimap<String, RandomVariable> childToParentEdges = HashMultimap.create();
   private final Multimap<String, RandomVariable> parentToChildEdges = HashMultimap.create();
+  private final Map<String,Boolean> evidence = Maps.newTreeMap();
   
   public Network () {}
 
@@ -62,7 +64,49 @@ public class Network {
   }
   
   public double query(String expression) {
+    if (!allCptsPopulated()) {
+      throw new IllegalStateException("You must first assign probabilities to all entries in the CPT for each random variable");
+    }
     return inferencer.query(expression);
+  }
+
+  public boolean containsVar(String id) {
+    return varsById.containsKey(id);
+  }
+  
+  public void setEvidence (String varId, boolean value) {
+    requireNonNull(varId, "varId cannot be null");
+    checkArgument(varsById.containsKey(varId), "A variable with an id of '" + varId + "' has not been defined for this network");
+    evidence.put(varId, value);
+    eventBus.post(this);
+  }
+  
+  public void clearEvidence (String varId) {
+    requireNonNull(varId, "varId cannot be null");
+    checkArgument(varsById.containsKey(varId), "A variable with an id of '" + varId + "' has not been defined for this network");
+    evidence.remove(varId);
+    eventBus.post(this);
+  }
+  
+  public void clearEvidence () {
+    evidence.clear();
+    eventBus.post(this);
+  }
+  
+  public Map<String,Boolean> getEvidence () {
+    return ImmutableMap.copyOf(evidence);
+  }
+
+  public boolean hasEvidence () {
+    return !evidence.isEmpty();
+  }
+  
+  public void addNetworkListener(Object object) {
+    eventBus.register(object);
+  }
+  
+  public void removeNetworkListener(Object object) {
+    eventBus.unregister(object);
   }
 
   void addEdge(RandomVariable parent, RandomVariable child) {
@@ -77,6 +121,16 @@ public class Network {
     eventBus.post(new EdgeAddedEvent(parent, child));
   }
 
+  Set<RandomVariable> getChildren(RandomVariable node) {
+    Collection<RandomVariable> children = parentToChildEdges.get(node.getId());
+    return ImmutableSet.copyOf(children);
+  }
+
+  Set<RandomVariable> getParents(RandomVariable node) {
+    Collection<RandomVariable> parents = childToParentEdges.get(node.getId());
+    return ImmutableSet.copyOf(parents);
+  }
+
   private void checkForCycles(String parent, String child, RandomVariable start) {
      for (RandomVariable descendant : parentToChildEdges.get(start.getId())) {
        if (parent.equals(descendant.getId())) {
@@ -86,18 +140,14 @@ public class Network {
      }
   }
 
-  Set<RandomVariable> getChildren(RandomVariable node) {
-    Collection<RandomVariable> children = parentToChildEdges.get(node.getId());
-    return ImmutableSet.copyOf(children);
-  }
-  
-  Set<RandomVariable> getParents(RandomVariable node) {
-    Collection<RandomVariable> parents = childToParentEdges.get(node.getId());
-    return ImmutableSet.copyOf(parents);
+  private boolean allCptsPopulated() {
+    for (RandomVariable var : vars) {
+      if (!var.getCpt().hasAllRequiredProbabilities()) {
+        return false;
+      }
+    }
+    return true;
   }
 
-  public boolean containsVar(String id) {
-    return varsById.containsKey(id);
-  }
   
 }

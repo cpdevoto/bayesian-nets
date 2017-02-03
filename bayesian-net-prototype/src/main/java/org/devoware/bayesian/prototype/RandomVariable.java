@@ -2,6 +2,7 @@ package org.devoware.bayesian.prototype;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.Map.Entry;
 import java.util.Set;
 
 import com.google.common.eventbus.Subscribe;
@@ -29,7 +30,7 @@ public class RandomVariable {
   public String getLabel() {
     return label;
   }
-
+  
   public void addChild(RandomVariable node) {
     requireNonNull(node, "node cannot be null");
     network.addEdge(this, node);
@@ -53,6 +54,27 @@ public class RandomVariable {
   
   public ConditionalProbabilityTable getCpt() {
     return cpt;
+  }
+  
+  public double getProbability() {
+    StringBuilder buf = new StringBuilder("P(").append(id);
+    if (network.hasEvidence()) {
+      buf.append("|");
+      boolean firstLoop = true;
+      for (Entry<String,Boolean> entry : network.getEvidence().entrySet()) {
+        if (firstLoop) {
+          firstLoop = false;
+        } else {
+          buf.append(",");
+        }
+        if (entry.getValue() == false) {
+          buf.append("~");
+        }
+        buf.append(entry.getKey());
+      }
+    }
+    buf.append(")");
+    return network.query(buf.toString());
   }
   
   @Override
