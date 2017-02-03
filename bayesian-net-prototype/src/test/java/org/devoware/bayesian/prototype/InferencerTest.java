@@ -90,5 +90,13 @@ public class InferencerTest {
     result = inferencer.query("P(C)");
     scaledResult = new BigDecimal(result).setScale(1, RoundingMode.HALF_UP);
     assertThat(scaledResult, equalTo(new BigDecimal("0.5")));
+
+    result = inferencer.query("P(C|C)");
+    scaledResult = new BigDecimal(result).setScale(1, RoundingMode.HALF_UP);
+    assertThat(scaledResult, equalTo(new BigDecimal("1.0")));
+  
+    result = inferencer.query("P(C|~C)");
+    scaledResult = new BigDecimal(result).setScale(1, RoundingMode.HALF_UP);
+    assertThat(scaledResult, equalTo(new BigDecimal("0.0")));
   }
 }

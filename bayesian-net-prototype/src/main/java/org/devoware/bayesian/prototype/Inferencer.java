@@ -29,6 +29,9 @@ class Inferencer {
   
   double query (String expression) {
     ProbabilityExpression expr = network.parse(expression);
+    if (expr.hasTermDisagreemets()) {
+      return 0.0;
+    }
     ProbabilityExpressionFilter numeratorFilter = generateNumeratorFilter(expr);
     List<ProbabilityExpressionFilter> numeratorFilters = generateJointProbabilityFilters(numeratorFilter);
     BigDecimal result = compute(numeratorFilters);

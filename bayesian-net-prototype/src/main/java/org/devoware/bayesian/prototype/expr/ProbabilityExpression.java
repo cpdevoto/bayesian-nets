@@ -15,6 +15,7 @@ public class ProbabilityExpression {
   
   private Map<String, Boolean> hypotheses;
   private Map<String, Boolean> evidence;
+  private boolean termDisagreements = false;
 
   public static ProbabilityExpression create (String expr) {
     requireNonNull(expr, "expr cannot be null");
@@ -32,6 +33,12 @@ public class ProbabilityExpression {
   private ProbabilityExpression(Builder builder) {
     this.hypotheses = ImmutableMap.copyOf(builder.hypotheses);
     this.evidence = ImmutableMap.copyOf(builder.evidence);
+    for (Entry<String,Boolean> entry : this.hypotheses.entrySet()) {
+      if (evidence.containsKey(entry.getKey()) && evidence.get(entry.getKey()) != entry.getValue()) {
+        termDisagreements = true;
+        break;
+      }
+    }
   }
 
   public Map<String, Boolean> getHypothesesMap() {
@@ -52,6 +59,11 @@ public class ProbabilityExpression {
 
   public boolean getEvidence(String id) {
     return evidence.get(id);
+  }
+  
+  public boolean hasTermDisagreemets () {
+    // Example P(C|~C) => the term has one value in the hypothesis and another in the evidence
+    return termDisagreements;
   }
 
   @Override
@@ -126,14 +138,12 @@ public class ProbabilityExpression {
     
     public Builder withHypothesis(String id, boolean value) {
       requireNonNull(id, "id cannot be null");
-      checkArgument(!evidence.containsKey(id), "You cannot reference the same variable as a hypothesis and as evidence");
       hypotheses.put(id, value);
       return this;
     }
 
     public Builder withEvidence(String id, boolean value) {
       requireNonNull(id, "id cannot be null");
-      checkArgument(!hypotheses.containsKey(id), "You cannot reference the same variable as a hypothesis and as evidence");
       evidence.put(id, value);
       return this;
     }
