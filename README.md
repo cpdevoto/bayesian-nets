@@ -87,6 +87,12 @@ public class Main {
 
 }
 ```
+### Understanding the math behind the queries
 
+The purpose of this section is to demystify the math underlying the inference engine which the Bayesian network uses in order to evaluate arbitrary queries such as: **P(S|W,~Q)**.
+
+The inference engine works by converting the specified query expression into a form that is composed entirely of terms that appear within the CPT tables. Once the expression has been converted in this way, computing the result is simply a matter of doing CPT lookups and then appying basic math.
+
+![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 1")
 
 
